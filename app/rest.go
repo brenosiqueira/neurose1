@@ -6,6 +6,7 @@ import (
   "net/http"
 
   "github.com/gorilla/mux"
+  "runtime"
 )
 
 // Estrutura das ROTAS
@@ -20,14 +21,14 @@ type Routes []Route
 
 // Definicao das ROTAS
 var routes = Routes {
-  Route { "Order", "POST", "/neurorder/order", Order,  },
-  Route { "OrderIten", "POST", "/neurorder/order/{id}/item",  OrderIten, },
-  Route { "Payment", "POST", "/neurorder/order/{id}/payment", Payment, },
+  Route { "Order", "POST", "/api/v1/order", Order,  },
+  Route { "OrderIten", "POST", "/api/v1/order/{id}/item",  OrderIten, },
+  Route { "Payment", "POST", "/api/v1/order/{id}/payment", Payment, },
 }
 
 func InitRESTMap() {
   router := newRouter()
-  log.Fatal(http.ListenAndServe(":9090", router))
+  log.Fatal(http.ListenAndServe(":8080", router))
 }
 
 func newRouter() *mux.Router {
