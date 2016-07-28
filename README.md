@@ -1,7 +1,18 @@
 # neurose1
 
+## Como desenvolver?
 
-- Teste das chamadas REST
+1. Clone o repositório.
+2. Rodar app pelo docker-compose
+
+```console
+git clone git@github.com:13team/neurose1.git
+cd neurose1
+docker-compose up -d
+```
+
+
+## Teste das chamadas REST
 
 ```
 #cadastrar order
@@ -17,7 +28,8 @@ curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "sku=A7EF74
 curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "external_id=UUEF748A-EE40-48C1-8AF7-0E8A99D4D7A1&amount=1000&type=PAYMENT&authorization_code=100010&card_brand=VISA&card_bin=123465&card_last=1234" http://localhost:9090/neurorder/order/B7EF748A-EE40-48C1-8AF7-0E8A99D4D7A1/payment
 ```
 
--  Esboço Scripts de banco (Obs.: a aplicação ainda não está acessando a base)
+
+## Esboço Scripts de banco (Obs.: a aplicação ainda não está acessando a base)
 
 ```
 CREATE KEYSPACE neurose WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'}  AND durable_writes = true;
