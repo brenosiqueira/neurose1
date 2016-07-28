@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -e
+
+go-wrapper download && go-wrapper install;
+
+exec go-wrapper run
