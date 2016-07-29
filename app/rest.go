@@ -6,7 +6,7 @@ import (
   "net/http"
 
   "github.com/gorilla/mux"
-  "runtime"
+  // "runtime"
 )
 
 // Estrutura das ROTAS
@@ -28,7 +28,7 @@ var routes = Routes {
 
 func InitRESTMap() {
   router := newRouter()
-  log.Fatal(http.ListenAndServe(":8080", router))
+  log.Fatal(http.ListenAndServe(":9090", router))
 }
 
 func newRouter() *mux.Router {
