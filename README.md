@@ -12,6 +12,16 @@ docker-compose up -d
 ```
 
 
+## Como criar o banco?
+
+1. Rodar comando cqlsh
+2. Criando banco no docker
+
+```console
+cqlsh -f config/schema.cql
+docker exec -it 
+```
+
 ## Teste das chamadas REST
 
 ```
