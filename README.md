@@ -18,62 +18,71 @@ docker-compose up -d
 2. Criando banco no docker
 
 ```console
-cqlsh -f config/schema.cql
-docker exec -it 
+# para garantir que o schema foi copiado para o container
+docker cp config/schema.cql $NOME_CONTAINER_CASSANDRA:/config/schema.cql
+
+docker exec -it $NOME_CONTAINER_CASSANDRA cqlsh -f config/schema.cql
 ```
 
 ## Teste das chamadas REST
 
 ```
-#cadastrar order
+#Cadastrar order
 
-curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "number=10&reference=bluedream&status=DRAFT&notes=dinheiro" http://localhost/api/v1/order
+curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "number=10&reference=bluedream&status=DRAFT&notes=dinheiro" http://localhost:9090/api/v1/order
 
-# Cadastra Items http://localhost/api/v1/order/{id}/item
+#Cadastra Items http://localhost:9090/api/v1/order/{id}/item
 
-curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "sku=A7EF748A-EE40-48C1-8AF7-0E8A99D4D7A1&unit_price=1000&quantity=2" http://localhost/api/v1/order/B7EF748A-EE40-48C1-8AF7-0E8A99D4D7A1/item
+curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "sku=A7EF748A-EE40-48C1-8AF7-0E8A99D4D7A1&unit_price=1000&quantity=2" http://localhost:9090/api/v1/order/B7EF748A-EE40-48C1-8AF7-0E8A99D4D7A1/item
 
-# Cadastra Transacao
+#Cadastra Transacao
 
-curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "external_id=UUEF748A-EE40-48C1-8AF7-0E8A99D4D7A1&amount=1000&type=PAYMENT&authorization_code=100010&card_brand=VISA&card_bin=123465&card_last=1234" http://localhost/api/v1/order/B7EF748A-EE40-48C1-8AF7-0E8A99D4D7A1/payment
+curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "external_id=UUEF748A-EE40-48C1-8AF7-0E8A99D4D7A1&amount=1000&type=PAYMENT&authorization_code=100010&card_brand=VISA&card_bin=123465&card_last=1234" http://localhost:9090/api/v1/order/B7EF748A-EE40-48C1-8AF7-0E8A99D4D7A1/payment
 ```
 
+## schema
+```cql
+CREATE KEYSPACE IF NOT EXISTS "neurose1"
+  WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 2 };
 
-## Esboço Scripts de banco (Obs.: a aplicação ainda não está acessando a base)
+USE neurose1;
 
-```
-CREATE KEYSPACE neurose WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'}  AND durable_writes = true;
-
-USE neurose;
-create table neurorder (
-  id uuid primary key,
-  number varchar,
-  reference varchar,
-  status varchar,
-  created_at timestamp,
-  updated_at timestamp,
-  notes varchar,
-  price int
-);
-
-create table neurorder_item (
-  id uuid primary key,
-  sku uuid,
+CREATE TYPE IF NOT EXISTS orderitem (
+  sku text,
   unit_price int,
-  quantity int,
-  neurorder_id uuid
+  quantity int
 );
 
-create table transaction(
-   id uuid primary key,
-   external_id varchar,
-   amount int,
-   type varchar,
-   authorization_code varchar,
-   card_brand varchar
-   card_bin varchar
-   card_last varchar
-   neurorder_id uuid
-  )
+CREATE TYPE IF NOT EXISTS creditcard (
+    brand text,
+    bin int,
+    last int
+);
 
+CREATE TYPE IF NOT EXISTS payment (
+  external_id text,
+  amount int,
+  transaction_type text,
+  auth_code text,
+  creditcard frozen <creditcard>
+);
+
+CREATE TABLE IF NOT EXISTS neurorder (
+  order_id uuid,
+  number text,
+  reference text,
+  status int,
+  notes text,
+
+  items list<frozen <orderitem>>,
+  payments list<frozen <payment>>,
+
+  PRIMARY KEY (order_id)
+);
+```
+
+## Notas
+- Se usa o Atom para escrever os scripts CQL, você pode instalar o plugin language-cassandra-cql para deixar a sintaxe em highlight.
+```console
+apm install language-cassandra-cql
 ```
