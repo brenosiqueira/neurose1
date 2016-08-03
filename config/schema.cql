@@ -1,6 +1,6 @@
 CREATE KEYSPACE IF NOT EXISTS "neurose1"
   WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 2 };
-  
+
 USE neurose1;
 
 CREATE TYPE IF NOT EXISTS orderitem (
@@ -32,6 +32,6 @@ CREATE TABLE IF NOT EXISTS neurorder (
   
   items list<frozen <orderitem>>,
   payments list<frozen <payment>>,
-  
+
   PRIMARY KEY (order_id)
 );
