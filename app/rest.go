@@ -4,9 +4,9 @@ import (
   "fmt"
   "log"
   "net/http"
-
+  "encoding/json"
   "github.com/gorilla/mux"
-  // "runtime"
+  "github.com/gocql/gocql"
 )
 
 // Estrutura das ROTAS
@@ -19,19 +19,19 @@ type Route struct {
 
 type Routes []Route
 
-// Definicao das ROTAS
-var routes = Routes {
-  Route { "Order", "POST", "/api/v1/order", Order,  },
-  Route { "OrderIten", "POST", "/api/v1/order/{id}/item",  OrderIten, },
-  Route { "Payment", "POST", "/api/v1/order/{id}/payment", Payment, },
-}
-
-func InitRESTMap() {
-  router := newRouter()
+func InitRESTMap(session *gocql.Session) {
+  router := newRouter(session)
   log.Fatal(http.ListenAndServe(":9090", router))
 }
 
-func newRouter() *mux.Router {
+func newRouter(session *gocql.Session) *mux.Router {
+  // Definicao das ROTAS
+  var routes = Routes {
+    Route { "Order", "POST", "/api/v1/order", func(w http.ResponseWriter, r *http.Request) { Order(w, r, session) } ,  },
+    Route { "OrderIten", "POST", "/api/v1/order/{id}/item",  func(w http.ResponseWriter, r *http.Request) { OrderIten(w, r, session) }, },
+    Route { "Payment", "POST", "/api/v1/order/{id}/payment", func(w http.ResponseWriter, r *http.Request) { Payment(w, r, session) }, },
+  }
+
   router := mux.NewRouter().StrictSlash(true)
   for _, route := range routes {
     var handler http.Handler
@@ -45,9 +45,13 @@ func newRouter() *mux.Router {
   return router
 }
 
+type OrderResponse struct {
+  Uuid string `json:"uuid"`
+}
+
 // Handlers para as Rotas, ou seja, quem trata as requisicoes HTTP
 
-func Order(w http.ResponseWriter, r *http.Request) {
+func Order(w http.ResponseWriter, r *http.Request, session *gocql.Session) {
   //Número da Order. Geralmente esse número representa o ID da Order em um sistema externo através da integração com parceiros.
   number := r.FormValue("number")
   //Referência da Order. Usada para facilitar o acesso ou localização da mesma.
@@ -56,19 +60,55 @@ func Order(w http.ResponseWriter, r *http.Request) {
   status := r.FormValue("status")
   // Um texto livre usado pelo Merchant para comunicação.
   notes := r.FormValue("notes")
+  fmt.Printf("Chegou uma requisicoes de order: number %s, reference %s, status %s, notes %s \n", number, reference, status, notes)
 
-  fmt.Println("================ Order ===================")
-  fmt.Println(number)
-  fmt.Println(reference)
-  fmt.Println(status)
-  fmt.Println(notes)
+  uuid := gocql.TimeUUID()
+  statusInt := translateStatus(status)
+  if statusInt == 99 {
+    http.Error(w, "Parametro status invalido", http.StatusPreconditionFailed)
+    return
+  }
 
   // Gravar no banco e retornar o UUID gerado
-
-  // Retornar um JSON com o UUID (id da Order)
+  if err := session.Query("INSERT INTO neurorder (order_id, number, reference, status, notes) VALUES (?,?,?,?,?)", uuid, number, reference, statusInt, notes).Exec(); err != nil {
+    fmt.Println(err)
+    http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+  } else {
+    // Retornar um JSON com o UUID (id da Order)
+    w.WriteHeader(http.StatusCreated)
+    orderResponse := OrderResponse { Uuid: uuid.String() }
+    json.NewEncoder(w).Encode(orderResponse)
+  }
 }
 
-func OrderIten(w http.ResponseWriter, r *http.Request) {
+ func translateStatus(status string) int {
+   var statusInt int
+   switch status {
+     case "DRAFT":
+      statusInt = 0
+     case "ENTERED":
+      statusInt = 1
+     case "CANCELED":
+      statusInt = 2
+     case "PAID":
+      statusInt = 3
+     case "APPROVED":
+      statusInt = 4
+     case "REJECTED":
+      statusInt = 5
+     case "RE-ENTERED":
+      statusInt = 6
+     case "CLOSED":
+      statusInt = 7
+     default:
+       // DESCONHECIDO
+      statusInt = 99
+    }
+
+   return statusInt
+ }
+
+func OrderIten(w http.ResponseWriter, r *http.Request, session *gocql.Session) {
   vars := mux.Vars(r)
   id := vars["id"] // Id da Order
 
@@ -91,7 +131,7 @@ func OrderIten(w http.ResponseWriter, r *http.Request) {
   fmt.Fprintf(w, "id recebido:", id)
 }
 
-func Payment(w http.ResponseWriter, r *http.Request) {
+func Payment(w http.ResponseWriter, r *http.Request, session *gocql.Session) {
   vars := mux.Vars(r)
   id := vars["id"]
   // Id externa da transação
