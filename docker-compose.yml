@@ -14,4 +14,4 @@ services:
   db:
     image: cassandra
     volumes:
-      - ./config/schema.cql:/schema.cql
+      - ./config/schema.cql:/config
