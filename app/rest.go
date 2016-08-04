@@ -5,6 +5,9 @@ import (
   "log"
   "net/http"
   "encoding/json"
+
+  "strconv"
+
   "github.com/gorilla/mux"
   "github.com/gocql/gocql"
 )
@@ -81,54 +84,27 @@ func Order(w http.ResponseWriter, r *http.Request, session *gocql.Session) {
   }
 }
 
- func translateStatus(status string) int {
-   var statusInt int
-   switch status {
-     case "DRAFT":
-      statusInt = 0
-     case "ENTERED":
-      statusInt = 1
-     case "CANCELED":
-      statusInt = 2
-     case "PAID":
-      statusInt = 3
-     case "APPROVED":
-      statusInt = 4
-     case "REJECTED":
-      statusInt = 5
-     case "RE-ENTERED":
-      statusInt = 6
-     case "CLOSED":
-      statusInt = 7
-     default:
-       // DESCONHECIDO
-      statusInt = 99
-    }
-
-   return statusInt
- }
-
 func OrderIten(w http.ResponseWriter, r *http.Request, session *gocql.Session) {
   vars := mux.Vars(r)
   id := vars["id"] // Id da Order
-
   // UUID que identifica unicamente o  Produto que está sendo comprado.
   sku := r.FormValue("sku")
   // Preço do produto.	integer Valor em centavos, e.g R$ 10,00 serão representados como 1000, em centavos.
   unit_price := r.FormValue("unit_price")
   // Quantidade de produtos comprados. integer
   quantity := r.FormValue("quantity")
+  fmt.Printf("Chegou uma requisicoes para cadastar um item referente a order %s: (sku= %s, unit_price=%s, quantity=%s)\n", id, sku, unit_price, quantity)
 
-  fmt.Println("================ OrderIten ===================")
-  fmt.Println(id)
-  fmt.Println(sku)
-  fmt.Println(unit_price)
-  fmt.Println(quantity)
+  // Infelizmente só consegui assim... Tomara que não tenha sql injection para o cassandra.. Ou melhor, "CQL injection"
+  var query string = fmt.Sprintf("UPDATE neurorder SET items = items + [{sku: '%s', unit_price:%s, quantity:%s}] WHERE order_id=%s", sku, unit_price, quantity, id)
+
   // Gravar no banco o OrderIten vinculado ao  (id da Order)
-
-  // Retornar um JSON com o UUID (id da Order)
-
-  fmt.Fprintf(w, "id recebido:", id)
+  if err := session.Query(query).Exec(); err != nil {
+    fmt.Printf("Erro ao fazer update para order id=%s, item sku=%s | Err=%s\n", id, sku, err)
+    http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+  } else {
+    w.WriteHeader(http.StatusNoContent)
+  }
 }
 
 func Payment(w http.ResponseWriter, r *http.Request, session *gocql.Session) {
@@ -149,16 +125,33 @@ func Payment(w http.ResponseWriter, r *http.Request, session *gocql.Session) {
   // Last do cartão	string - 4 ultimos digitos
   card_last := r.FormValue("card_last")
 
-  fmt.Println("================ Payment ===================")
-  fmt.Println(id)
-  fmt.Println(external_id)
-  fmt.Println(amount)
-  fmt.Println(transaction_type)
+  fmt.Printf("Chegou uma requisicoes para Pagamento referente a order %s: (external_id= %s, amount=%s, transaction_type=%s, authorization_code=%s, card_brand=%s, card_bin=%s, card_last=%s)\n", id, external_id, amount, transaction_type,authorization_code,card_brand, card_bin, card_last)
 
-  fmt.Println(authorization_code)
-  fmt.Println(card_brand)
-  fmt.Println(card_bin)
-  fmt.Println(card_last)
+}
 
-  fmt.Fprintf(w, "id recebido:", id)
+func translateStatus(status string) int {
+  var statusInt int
+  switch status {
+    case "DRAFT":
+     statusInt = 0
+    case "ENTERED":
+     statusInt = 1
+    case "CANCELED":
+     statusInt = 2
+    case "PAID":
+     statusInt = 3
+    case "APPROVED":
+     statusInt = 4
+    case "REJECTED":
+     statusInt = 5
+    case "RE-ENTERED":
+     statusInt = 6
+    case "CLOSED":
+     statusInt = 7
+    default:
+      // DESCONHECIDO
+     statusInt = 99
+   }
+
+  return statusInt
 }
