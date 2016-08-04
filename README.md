@@ -43,7 +43,7 @@ curl -X PUT -H "Content-Type: application/x-www-form-urlencoded" -d "external_id
 ## schema
 ```cql
 CREATE KEYSPACE IF NOT EXISTS "neurose1"
-  WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 2 };
+  WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };
 
 USE neurose1;
 

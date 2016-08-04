@@ -1,5 +1,5 @@
 CREATE KEYSPACE IF NOT EXISTS "neurose1"
-  WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 2 };
+  WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };
 
 USE neurose1;
 
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS neurorder (
   reference text,
   status int,
   notes text,
-  
+
   items list<frozen <orderitem>>,
   payments list<frozen <payment>>,
 
