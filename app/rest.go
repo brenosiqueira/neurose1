@@ -6,8 +6,6 @@ import (
   "net/http"
   "encoding/json"
 
-  "strconv"
-
   "github.com/gorilla/mux"
   "github.com/gocql/gocql"
 )
@@ -31,8 +29,8 @@ func newRouter(session *gocql.Session) *mux.Router {
   // Definicao das ROTAS
   var routes = Routes {
     Route { "Order", "POST", "/api/v1/order", func(w http.ResponseWriter, r *http.Request) { Order(w, r, session) } ,  },
-    Route { "OrderIten", "POST", "/api/v1/order/{id}/item",  func(w http.ResponseWriter, r *http.Request) { OrderIten(w, r, session) }, },
-    Route { "Payment", "POST", "/api/v1/order/{id}/payment", func(w http.ResponseWriter, r *http.Request) { Payment(w, r, session) }, },
+    Route { "OrderIten", "PUT", "/api/v1/order/{id}/item",  func(w http.ResponseWriter, r *http.Request) { OrderIten(w, r, session) }, },
+    Route { "Payment", "PUT", "/api/v1/order/{id}/payment", func(w http.ResponseWriter, r *http.Request) { Payment(w, r, session) }, },
   }
 
   router := mux.NewRouter().StrictSlash(true)
@@ -127,6 +125,18 @@ func Payment(w http.ResponseWriter, r *http.Request, session *gocql.Session) {
 
   fmt.Printf("Chegou uma requisicoes para Pagamento referente a order %s: (external_id= %s, amount=%s, transaction_type=%s, authorization_code=%s, card_brand=%s, card_bin=%s, card_last=%s)\n", id, external_id, amount, transaction_type,authorization_code,card_brand, card_bin, card_last)
 
+  // Mais uma vez, infelizmente só consegui assim... Tomara que não tenha sql injection para o cassandra.. Ou melhor, "CQL injection"
+  var query string = fmt.Sprintf("UPDATE neurorder "+
+    "SET payments = payments + [{external_id: '%s', amount:%s, transaction_type:'%s', auth_code:'%s', creditcard : {brand:'%s',bin:%s,last:%s}}] " +
+    "WHERE order_id=%s", external_id, amount, transaction_type,authorization_code,card_brand, card_bin, card_last, id)
+
+  // Gravar no banco o OrderIten vinculado ao  (id da Order)
+  if err := session.Query(query).Exec(); err != nil {
+    fmt.Printf("Erro ao fazer update de pagamento para order id=%s | Err=%s\n", id, err)
+    http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+  } else {
+    w.WriteHeader(http.StatusNoContent)
+  }
 }
 
 func translateStatus(status string) int {
