@@ -33,11 +33,11 @@ curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "number=10&
 
 #Cadastra Items http://localhost:9090/api/v1/order/{id}/item
 
-curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "sku=A7EF748A-EE40-48C1-8AF7-0E8A99D4D7A1&unit_price=1000&quantity=2" http://localhost:9090/api/v1/order/B7EF748A-EE40-48C1-8AF7-0E8A99D4D7A1/item
+curl -X PUT -H "Content-Type: application/x-www-form-urlencoded" -d "sku=A7EF748A-EE40-48C1-8AF7-0E8A99D4D7A1&unit_price=1000&quantity=2" http://localhost:9090/api/v1/order/B7EF748A-EE40-48C1-8AF7-0E8A99D4D7A1/item
 
 #Cadastra Transacao
 
-curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "external_id=UUEF748A-EE40-48C1-8AF7-0E8A99D4D7A1&amount=1000&type=PAYMENT&authorization_code=100010&card_brand=VISA&card_bin=123465&card_last=1234" http://localhost:9090/api/v1/order/B7EF748A-EE40-48C1-8AF7-0E8A99D4D7A1/payment
+curl -X PUT -H "Content-Type: application/x-www-form-urlencoded" -d "external_id=UUEF748A-EE40-48C1-8AF7-0E8A99D4D7A1&amount=1000&type=PAYMENT&authorization_code=100010&card_brand=VISA&card_bin=123465&card_last=1234" http://localhost:9090/api/v1/order/B7EF748A-EE40-48C1-8AF7-0E8A99D4D7A1/payment
 ```
 
 ## schema
